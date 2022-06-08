@@ -16,18 +16,30 @@ const io = require("socket.io")(expressServer, {
     cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] },
 });
 
-io.on("connection", (socket) => {
-    socket.emit("messageFromServer", { data: "message from server" });
-    socket.on("messageToServer", (data) => {
-        console.log(data);
-    });
-});
-
 let isFirstPlayer = false;
 
 const rows = 6;
 const columns = 7;
 const array = createStartingArray(rows, columns);
+
+io.on("connection", (socket) => {
+    console.log("server connected");
+    socket.on("dropTile", (index) => {
+        const col = index.col;
+        const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
+
+        isFirstPlayer = !isFirstPlayer;
+        array[lowestEmptyRow][col] = isFirstPlayer ? 1 : 2;
+
+        const winner = searchForWinner(
+            array,
+            isFirstPlayer,
+            lowestEmptyRow,
+            col
+        );
+        io.emit("updatedState", { array, winner });
+    });
+});
 
 app.use(bodyParser.json());
 
@@ -50,18 +62,17 @@ app.get("/", (req, res, next) => {
     res.status(200).send(array);
 });
 
-app.post("/", (req, res, next) => {
-    const { col } = req.body;
-    const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
+// app.post("/", (req, res, next) => {
+//     const { col } = req.body;
+//     const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
 
-    isFirstPlayer = !isFirstPlayer;
-    array[lowestEmptyRow][col] = isFirstPlayer ? 1 : 2;
+//     isFirstPlayer = !isFirstPlayer;
+//     array[lowestEmptyRow][col] = isFirstPlayer ? 1 : 2;
 
-    const winner = searchForWinner(array, isFirstPlayer, lowestEmptyRow, col);
-    console.log("search result", searchForWinner);
+//     const winner = searchForWinner(array, isFirstPlayer, lowestEmptyRow, col);
 
-    res.status(200).send({ array, winner });
-});
+//     res.status(200).send({ array, winner });
+// });
 
 app.get("/restart", (req, res, next) => {
     for (let i = 0; i < rows; i++) {
