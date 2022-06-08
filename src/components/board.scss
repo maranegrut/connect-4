@@ -1,0 +1,19 @@
+$main-blue: rgb(27, 76, 120);
+
+.game-board {
+    background-color: $main-blue;
+    width: 90%;
+    margin: auto;
+    border: 0.5em solid $main-blue;
+    border-radius: 1em;
+    box-sizing: border-box;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    column-gap: 3vw;
+    row-gap: 3vh;
+    margin: auto;
+    border: 3vw solid $main-blue;
+    border-radius: 2em;
+}

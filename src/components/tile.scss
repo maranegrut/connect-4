@@ -1,0 +1,14 @@
+.grid-item {
+    border-radius: 50%;
+    height: 10vh;
+    background-color: white;
+}
+.tile {
+    background-color: rgb(163, 40, 40);
+    border-radius: 50%;
+    height: 10vh;
+    box-shadow: inset 0px 0px 10px rgba(0, 0, 0, 0.75) inset;
+    &.yellow {
+        background-color: rgb(255, 208, 0);
+    }
+}

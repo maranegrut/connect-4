@@ -1,0 +1,46 @@
+{
+  "name": "connect-four",
+  "version": "1.0.0",
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-server": "nodemon backend/app.js",
+    "start": "react-scripts start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maranegrut/connect-4.git"
+  },
+  "author": "Mara",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maranegrut/connect-4/issues"
+  },
+  "homepage": "https://github.com/maranegrut/connect-4/#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "node": "^17.7.2",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "react-scripts": "^5.0.1",
+    "sass": "^1.52.2",
+    "socket.io": "^4.5.1",
+    "socket.io-client": "^4.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.16"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
