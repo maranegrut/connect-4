@@ -39,6 +39,13 @@ io.on("connection", (socket) => {
         );
         io.emit("updatedState", { array, winner });
     });
+    socket.on("restart", () => {
+        for (let i = 0; i < rows; i++) {
+            array[i].fill(0, 0, columns);
+        }
+        console.log(array);
+        io.emit("startNewGame", { array });
+    });
 });
 
 app.use(bodyParser.json());
@@ -59,24 +66,5 @@ app.use("/", (req, res, next) => {
 });
 
 app.get("/", (req, res, next) => {
-    res.status(200).send(array);
-});
-
-// app.post("/", (req, res, next) => {
-//     const { col } = req.body;
-//     const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
-
-//     isFirstPlayer = !isFirstPlayer;
-//     array[lowestEmptyRow][col] = isFirstPlayer ? 1 : 2;
-
-//     const winner = searchForWinner(array, isFirstPlayer, lowestEmptyRow, col);
-
-//     res.status(200).send({ array, winner });
-// });
-
-app.get("/restart", (req, res, next) => {
-    for (let i = 0; i < rows; i++) {
-        array[i].fill(0, 0, columns);
-    }
-    res.status(200).send(array);
+    res.status(200).send({ tileData: array });
 });
