@@ -22,15 +22,42 @@ const rows = 6;
 const columns = 7;
 const array = createStartingArray(rows, columns);
 
+const socketToUserMap = {
+  //uid1: socket1
+  //uid2: socket2
+  //etc.
+};
+
+const playerToSocketMap = {
+  //socket1: 1
+  //socket2: 2
+  //etc.
+};
+
+//if socket is equal to the socket that is sending data, return 'other player's turn now'
 io.on("connection", (socket) => {
   console.log("server connected");
+  console.log("uid", socket.handshake.query.uid);
+  const uid = socket.handshake.query.uid;
+  socketToUserMap[uid] = socket.id;
+  console.log("socket to user map", socketToUserMap);
+
+  const numberOfPlayersConnected = Object.keys(playerToSocketMap).length;
+  console.log("players connected", numberOfPlayersConnected);
+  playerToSocketMap[socket.id] = numberOfPlayersConnected + 1;
+  console.log("player to socket map", playerToSocketMap);
+
+  const winner = undefined;
+  socket.emit("updatedState", { array, winner });
 
   socket.on("dropTile", (index) => {
     const col = index.col;
     const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
 
     isFirstPlayer = !isFirstPlayer;
-    array[lowestEmptyRow][col] = isFirstPlayer ? 1 : 2;
+    console.log("current socket ID", socket.id);
+    array[lowestEmptyRow][col] = playerToSocketMap[socket.id];
+    console.log(array);
 
     const winner = searchForWinner(array, isFirstPlayer, lowestEmptyRow, col);
     io.emit("updatedState", { array, winner });
@@ -48,20 +75,3 @@ io.on("connection", (socket) => {
 app.use(bodyParser.json());
 
 app.use(express.static(path.join(__dirname, "public")));
-
-app.use("/", (req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PATCH, DELETE, OPTIONS"
-  );
-  next();
-});
-
-app.get("/", (req, res, next) => {
-  res.status(200).send({ tileData: array });
-});

@@ -2,13 +2,16 @@ import "./app.scss";
 import Overlay from "./components/overlay";
 import Board from "./components/board";
 import Tile from "./components/tile";
+import { useEffectOnce } from "./hooks/useEffectOnce";
 import { io } from "socket.io-client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 function App() {
   const [tiles, setTiles] = useState(false);
   const [winner, setWinner] = useState();
   const [socket, setSocket] = useState();
+  const [uid] = useState(uuidv4());
 
   const serverUrl = "http://localhost:5000";
 
@@ -40,24 +43,19 @@ function App() {
     setTiles(tileData);
   };
 
-  useEffect(() => {
-    const socket = io(serverUrl);
+  useEffectOnce(() => {
+    const socket = io(serverUrl, {
+      query: {
+        uid: uid,
+      },
+    });
+    console.log(uid);
 
     socket.on("updatedState", (updatedData) => {
       populateBoard(updatedData.array, socket);
       setWinner(updatedData.winner);
     });
 
-    const renderBoard = async () => {
-      try {
-        const response = await fetch(serverUrl);
-        const responseData = await response.json();
-        populateBoard(responseData.tileData, socket);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    renderBoard();
     setSocket(socket);
 
     socket.on("connect", () => {
