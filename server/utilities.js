@@ -29,6 +29,24 @@ const findLowestEmptyRowInCol = (array, col, rows) => {
   return lowestEmptyRow;
 };
 
+const determineNextPlayerUid = (socketToUserMap, socketId) => {
+  // it's their turn if they're not the one who just played
+  // aka if they're not the one whose socket we got the message from
+  // we have the socket id, get the uid corresponding to it
+  // send back the id for the front-end to decide
+  const uids = Object.values(socketToUserMap);
+  const currentPlayerUid = socketToUserMap[socketId];
+  const isCurrentPlayerUid = (uid) => uid === currentPlayerUid;
+
+  const nextPlayerIndex =
+    uids.findIndex(isCurrentPlayerUid) + 1 < uids.length
+      ? uids.findIndex(isCurrentPlayerUid) + 1
+      : 0;
+
+  const nextPlayerUid = uids[nextPlayerIndex];
+  return nextPlayerUid;
+};
+
 const findStartingIndex = (array, playerNumber, row, col, direction) => {
   let startingIndex;
 
@@ -127,5 +145,6 @@ const searchForWinner = (array, playerNumber, row, col) => {
 };
 
 exports.createStartingArray = createStartingArray;
-exports.searchForWinner = searchForWinner;
 exports.findLowestEmptyRowInCol = findLowestEmptyRowInCol;
+exports.determineNextPlayerUid = determineNextPlayerUid;
+exports.searchForWinner = searchForWinner;
