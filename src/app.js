@@ -65,11 +65,20 @@ function App() {
     });
   }, []);
 
+  const heading = isCurrentPlayersTurn
+    ? "YOUR TURN!"
+    : "OTHER PLAYER'S TURN...";
+
   return (
     <div>
-      <Board tiles={tiles} isCurrentPlayersTurn={isCurrentPlayersTurn} />
+      <h1>{heading}</h1>
+      <Board tiles={tiles} />
       {winner && (
-        <Overlay playerNumber={winner} playAgainHandler={playAgainHandler} />
+        <Overlay
+          playerNumber={winner}
+          iWon={winner && !isCurrentPlayersTurn}
+          playAgainHandler={playAgainHandler}
+        />
       )}
     </div>
   );

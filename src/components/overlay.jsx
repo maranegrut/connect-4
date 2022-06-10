@@ -1,7 +1,8 @@
 import "./overlay.scss";
 
-const Overlay = ({ playerNumber, playAgainHandler }) => {
+const Overlay = ({ playerNumber, iWon, playAgainHandler }) => {
   const playerColor = playerNumber === 1 ? "Red" : "Yellow";
+
   return (
     <div className="backdrop">
       <div className="modal">
@@ -13,7 +14,7 @@ const Overlay = ({ playerNumber, playAgainHandler }) => {
           />
         </div>
         <div>
-          <h1 className="winnerHeading">{playerColor} Won!</h1>
+          <h1 className="winnerHeading">{iWon ? "You" : playerColor} Won!</h1>
           <button onClick={playAgainHandler}>Play Again</button>
         </div>
         <div className="imgContainer">
