@@ -36,11 +36,13 @@ const socketToPlayerMap = {
 io.on("connection", (socket) => {
   const uid = socket.handshake.query.uid;
   socketToUidMap[socket.id] = uid;
+  console.log(socketToUidMap);
 
   const numberOfPlayersConnected = Object.keys(socketToPlayerMap).length;
   socketToPlayerMap[socket.id] = numberOfPlayersConnected + 1;
 
   const winner = undefined;
+
   // player who connects first goes first
   const firstPlayerUid = Object.values(socketToUidMap)[0];
   socket.emit("updatedState", {
@@ -55,6 +57,7 @@ io.on("connection", (socket) => {
 
     const playerNumber = socketToPlayerMap[socket.id];
     array[lowestEmptyRow][col] = playerNumber;
+    console.log(socketToPlayerMap);
 
     const nextPlayerUid = determineNextPlayerUid(socketToUidMap, socket.id);
 
@@ -69,6 +72,11 @@ io.on("connection", (socket) => {
     }
     const winner = undefined;
     io.emit("updatedState", { array, winner });
+  });
+
+  socket.on("disconnect", () => {
+    delete socketToPlayerMap[socket.id];
+    delete socketToUidMap[socket.id];
   });
 });
 

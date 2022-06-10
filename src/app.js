@@ -16,8 +16,10 @@ function App() {
 
   const serverUrl = "http://localhost:5000";
 
-  const addTileHandler = async (index, socket) => {
-    socket.emit("dropTile", { row: index.row, col: index.col });
+  const addTileHandler = async (index, socket, canPlay) => {
+    if (canPlay) {
+      socket.emit("dropTile", { row: index.row, col: index.col });
+    }
   };
 
   const playAgainHandler = async () => {
@@ -37,6 +39,7 @@ function App() {
             index={{ row: i, col: j }}
             key={i + "," + j}
             socket={socket}
+            isCurrentPlayersTurn={nextPlayerUid === uid}
           />
         );
       }
@@ -62,6 +65,10 @@ function App() {
 
     socket.on("connect", () => {
       console.log("connected", socket.id);
+
+      return () => {
+        socket.disconnect();
+      };
     });
   }, []);
 
