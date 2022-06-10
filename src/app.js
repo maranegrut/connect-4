@@ -11,6 +11,7 @@ function App() {
   const [tiles, setTiles] = useState(false);
   const [winner, setWinner] = useState();
   const [socket, setSocket] = useState();
+  const [isCurrentPlayersTurn, setIsCurrentPlayersTurn] = useState();
   const [uid] = useState(uuidv4());
 
   const serverUrl = "http://localhost:5000";
@@ -24,7 +25,7 @@ function App() {
     socket.emit("restart");
   };
 
-  const populateBoard = (tileData, socket) => {
+  const populateBoard = (tileData, nextPlayerUid, socket) => {
     console.log("in populate board", socket.id);
     for (let i = 0; i < tileData.length; i++) {
       for (let j = 0; j < tileData[i].length; j++) {
@@ -41,6 +42,7 @@ function App() {
       }
     }
     setTiles(tileData);
+    setIsCurrentPlayersTurn(nextPlayerUid === uid);
   };
 
   useEffectOnce(() => {
@@ -52,7 +54,7 @@ function App() {
     console.log(uid);
 
     socket.on("updatedState", (updatedData) => {
-      populateBoard(updatedData.array, socket);
+      populateBoard(updatedData.array, updatedData.nextPlayerUid, socket);
       setWinner(updatedData.winner);
     });
 
@@ -65,7 +67,7 @@ function App() {
 
   return (
     <div>
-      <Board tiles={tiles} />
+      <Board tiles={tiles} isCurrentPlayersTurn={isCurrentPlayersTurn} />
       {winner && (
         <Overlay playerNumber={winner} playAgainHandler={playAgainHandler} />
       )}

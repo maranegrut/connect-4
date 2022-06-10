@@ -16,15 +16,13 @@ const io = require("socket.io")(expressServer, {
   cors: { origin: "http://localhost:3000", methods: ["GET", "POST"] },
 });
 
-let isFirstPlayer = false;
-
 const rows = 6;
 const columns = 7;
 const array = createStartingArray(rows, columns);
 
 const socketToUserMap = {
-  //uid1: socket1
-  //uid2: socket2
+  //socket1: user1
+  //socket2: user2
   //etc.
 };
 
@@ -34,33 +32,45 @@ const playerToSocketMap = {
   //etc.
 };
 
-//if socket is equal to the socket that is sending data, return 'other player's turn now'
 io.on("connection", (socket) => {
-  console.log("server connected");
-  console.log("uid", socket.handshake.query.uid);
   const uid = socket.handshake.query.uid;
-  socketToUserMap[uid] = socket.id;
-  console.log("socket to user map", socketToUserMap);
+  socketToUserMap[socket.id] = uid;
 
   const numberOfPlayersConnected = Object.keys(playerToSocketMap).length;
-  console.log("players connected", numberOfPlayersConnected);
   playerToSocketMap[socket.id] = numberOfPlayersConnected + 1;
-  console.log("player to socket map", playerToSocketMap);
 
   const winner = undefined;
-  socket.emit("updatedState", { array, winner });
+  // player who connects first goes first
+  const firstPlayer = Object.values(socketToUserMap)[0];
+  socket.emit("updatedState", {
+    array,
+    winner,
+    nextPlayerUid: firstPlayer,
+  });
 
   socket.on("dropTile", (index) => {
     const col = index.col;
     const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
 
-    isFirstPlayer = !isFirstPlayer;
-    console.log("current socket ID", socket.id);
-    array[lowestEmptyRow][col] = playerToSocketMap[socket.id];
-    console.log(array);
+    const playerNumber = playerToSocketMap[socket.id];
+    array[lowestEmptyRow][col] = playerNumber;
 
-    const winner = searchForWinner(array, isFirstPlayer, lowestEmptyRow, col);
-    io.emit("updatedState", { array, winner });
+    // it's their turn if they're not the one who just played
+    // aka if they're not the one whose socket we got the message from
+    // we have the socket id, get the uid corresponding to it
+    // send back the id for the front-end to decide
+    const uids = Object.values(socketToUserMap);
+    const currentPlayerUid = socketToUserMap[socket.id];
+    const isCurrentPlayersUid = (uid) => uid === currentPlayerUid;
+    const nextPlayerIndex =
+      uids.findIndex(isCurrentPlayersUid) + 1 < uids.length
+        ? uids.findIndex(isCurrentPlayersUid) + 1
+        : 0;
+
+    const nextPlayerUid = uids[nextPlayerIndex];
+    const winner = searchForWinner(array, playerNumber, lowestEmptyRow, col);
+
+    io.emit("updatedState", { array, winner, nextPlayerUid });
   });
 
   socket.on("restart", () => {

@@ -113,8 +113,7 @@ const findStreak = (array, playerNumber, row, col, direction) => {
   return streak;
 };
 
-const searchForWinner = (array, isFirstPlayer, row, col) => {
-  const playerNumber = isFirstPlayer ? 1 : 2;
+const searchForWinner = (array, playerNumber, row, col) => {
   const directions = ["vertical", "horizontal", "diagonalUp", "diagonalDown"];
 
   for (const direction of directions) {
