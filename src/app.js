@@ -14,7 +14,7 @@ function App() {
   const [winner, setWinner] = useState();
   const [socket, setSocket] = useState();
   const [isReady, setIsReady] = useState(false);
-  const [playerDisconnected, setPlayerDisconnected] = useState(false);
+  const [opponentDisconnected, setOpponentDisconnected] = useState(false);
   const [isCurrentPlayersTurn, setIsCurrentPlayersTurn] = useState();
   const [uid] = useState(uuidv4());
 
@@ -27,12 +27,11 @@ function App() {
   };
 
   const playAgainHandler = async () => {
-    setPlayerDisconnected(false);
+    setOpponentDisconnected(false);
     socket.emit("restart");
   };
 
   const populateBoard = (tileData, nextPlayerUid, socket) => {
-    console.log("in populate board", socket.id);
     for (let i = 0; i < tileData.length; i++) {
       for (let j = 0; j < tileData[i].length; j++) {
         tileData[i][j] = (
@@ -43,7 +42,7 @@ function App() {
             index={{ row: i, col: j }}
             key={i + "," + j}
             socket={socket}
-            isCurrentPlayersTurn={nextPlayerUid === uid}
+            isCurrentPlayersTurn={nextPlayerUid === uid} //have to pass this to tile handler bc otherwise undefined
           />
         );
       }
@@ -60,16 +59,7 @@ function App() {
     });
     console.log(uid);
 
-    socket.on("updatedState", (updatedData) => {
-      populateBoard(updatedData.array, updatedData.nextPlayerUid, socket);
-      setWinner(updatedData.winner);
-    });
-
     setSocket(socket);
-
-    socket.on("connect", () => {
-      console.log("connected", socket.id);
-    });
 
     socket.on("ready", () => {
       setIsReady(true);
@@ -79,10 +69,13 @@ function App() {
       setIsReady(false);
     });
 
+    socket.on("updatedState", (updatedData) => {
+      populateBoard(updatedData.array, updatedData.nextPlayerUid, socket);
+      setWinner(updatedData.winner);
+    });
+
     socket.on("playerDisconnected", () => {
-      console.log("someone disconnected");
-      setIsReady(false);
-      setPlayerDisconnected(true);
+      setOpponentDisconnected(true);
     });
 
     return () => {
@@ -90,17 +83,15 @@ function App() {
     };
   }, []);
 
-  const heading = isCurrentPlayersTurn
-    ? "YOUR TURN!"
-    : "OTHER PLAYER'S TURN...";
+  const heading = isCurrentPlayersTurn ? "YOUR TURN!" : "OPPONENT'S TURN...";
 
   return (
     <div>
       <h1>{isReady ? heading : ""}</h1>
-      {playerDisconnected && (
+      {opponentDisconnected && (
         <DisconnectedOverlay playAgainHandler={playAgainHandler} />
       )}
-      {!isReady & !playerDisconnected && <LoadingScreen />}
+      {!isReady && !opponentDisconnected && <LoadingScreen />}
       <Board tiles={tiles} />
       {winner && (
         <Overlay
