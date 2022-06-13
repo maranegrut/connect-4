@@ -7,6 +7,9 @@ const {
   searchForWinner,
   findLowestEmptyRowInCol,
   determineNextPlayerUid,
+  checkIfReadyToStartGame,
+  startingState,
+  rebuildSocketToPlayerMap,
 } = require("./utilities");
 
 const app = express();
@@ -33,27 +36,21 @@ const socketToPlayerMap = {
   //etc.
 };
 
+let playersReady = 0;
+
 io.on("connection", (socket) => {
   const uid = socket.handshake.query.uid;
   socketToUidMap[socket.id] = uid;
   console.log(socketToUidMap);
 
-  const numberOfPlayersConnected = Object.keys(socketToPlayerMap).length + 1;
+  let numberOfPlayersConnected = Object.keys(socketToPlayerMap).length + 1;
   socketToPlayerMap[socket.id] = numberOfPlayersConnected;
 
-  if (numberOfPlayersConnected >= 2) {
-    io.emit("ready");
-  }
+  playersReady++;
 
-  const winner = undefined;
+  checkIfReadyToStartGame(playersReady, io);
 
-  // player who connects first goes first
-  const firstPlayerUid = Object.values(socketToUidMap)[0];
-  socket.emit("updatedState", {
-    array: createStartingArray(rows, columns),
-    winner,
-    nextPlayerUid: firstPlayerUid,
-  });
+  socket.emit("updatedState", startingState(socketToUidMap));
 
   socket.on("dropTile", (index) => {
     const col = index.col;
@@ -73,30 +70,22 @@ io.on("connection", (socket) => {
     for (let i = 0; i < rows; i++) {
       array[i].fill(0, 0, columns);
     }
-    const winner = undefined;
-    const firstPlayerUid = Object.values(socketToUidMap)[0];
 
-    io.emit("updatedState", {
-      array,
-      winner,
-      nextPlayerUid: firstPlayerUid,
-    });
+    io.emit("updatedState", startingState(socketToUidMap));
+
+    playersReady = Object.keys(socketToPlayerMap).length;
+    checkIfReadyToStartGame(playersReady, io);
   });
 
   socket.on("disconnect", () => {
     io.emit("playerDisconnected");
+
     delete socketToPlayerMap[socket.id];
     delete socketToUidMap[socket.id];
 
-    const playersRemaining = Object.keys(socketToPlayerMap);
+    rebuildSocketToPlayerMap(socketToPlayerMap);
 
-    for (key of playersRemaining) {
-      delete socketToPlayerMap[key]; // delete everyone to remake the map;
-      // could also have used let instead of const
-    }
-    for (key of playersRemaining) {
-      socketToPlayerMap[key] = Object.keys(socketToPlayerMap).length + 1;
-    }
+    playersReady = 0;
   });
 });
 

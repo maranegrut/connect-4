@@ -75,6 +75,10 @@ function App() {
       setIsReady(true);
     });
 
+    socket.on("waiting", () => {
+      setIsReady(false);
+    });
+
     socket.on("playerDisconnected", () => {
       console.log("someone disconnected");
       setIsReady(false);

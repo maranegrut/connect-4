@@ -29,6 +29,38 @@ const findLowestEmptyRowInCol = (array, col, rows) => {
   return lowestEmptyRow;
 };
 
+const checkIfReadyToStartGame = (playersReady, io) => {
+  if (playersReady >= 2) {
+    io.emit("ready");
+  } else {
+    io.emit("waiting");
+  }
+};
+
+const startingState = (socketToUidMap) => {
+  // player who connects first goes first
+  console.log("in starting state", socketToUidMap);
+  const firstPlayerUid = Object.values(socketToUidMap)[0];
+
+  return {
+    array: createStartingArray(rows, columns),
+    winner: undefined,
+    nextPlayerUid: firstPlayerUid,
+  };
+};
+
+const rebuildSocketToPlayerMap = (socketToPlayerMap) => {
+  const playersRemaining = Object.keys(socketToPlayerMap);
+
+  for (key of playersRemaining) {
+    delete socketToPlayerMap[key]; // delete everyone to remake the map;
+    // could also have used let instead of const
+  }
+  for (key of playersRemaining) {
+    socketToPlayerMap[key] = Object.keys(socketToPlayerMap).length + 1;
+  }
+};
+
 const determineNextPlayerUid = (socketToUserMap, socketId) => {
   // it's their turn if they're not the one who just played
   // aka if they're not the one whose socket we got the message from
@@ -148,3 +180,6 @@ exports.createStartingArray = createStartingArray;
 exports.findLowestEmptyRowInCol = findLowestEmptyRowInCol;
 exports.determineNextPlayerUid = determineNextPlayerUid;
 exports.searchForWinner = searchForWinner;
+exports.checkIfReadyToStartGame = checkIfReadyToStartGame;
+exports.startingState = startingState;
+exports.rebuildSocketToPlayerMap = rebuildSocketToPlayerMap;
