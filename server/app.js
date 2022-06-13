@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
   // player who connects first goes first
   const firstPlayerUid = Object.values(socketToUidMap)[0];
   socket.emit("updatedState", {
-    array,
+    array: createStartingArray(rows, columns),
     winner,
     nextPlayerUid: firstPlayerUid,
   });
@@ -61,7 +61,6 @@ io.on("connection", (socket) => {
 
     const playerNumber = socketToPlayerMap[socket.id];
     array[lowestEmptyRow][col] = playerNumber;
-    console.log(socketToPlayerMap);
 
     const nextPlayerUid = determineNextPlayerUid(socketToUidMap, socket.id);
 
@@ -88,6 +87,16 @@ io.on("connection", (socket) => {
     io.emit("playerDisconnected");
     delete socketToPlayerMap[socket.id];
     delete socketToUidMap[socket.id];
+
+    const playersRemaining = Object.keys(socketToPlayerMap);
+
+    for (key of playersRemaining) {
+      delete socketToPlayerMap[key]; // delete everyone to remake the map;
+      // could also have used let instead of const
+    }
+    for (key of playersRemaining) {
+      socketToPlayerMap[key] = Object.keys(socketToPlayerMap).length + 1;
+    }
   });
 });
 
