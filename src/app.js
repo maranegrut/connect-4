@@ -1,16 +1,20 @@
 import "./app.scss";
-import Overlay from "./components/overlay";
+import Overlay from "./components/winnerOverlay";
 import Board from "./components/board";
 import Tile from "./components/tile";
 import { useEffectOnce } from "./hooks/useEffectOnce";
 import { io } from "socket.io-client";
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import LoadingScreen from "./components/loadingScreen";
+import DisconnectedOverlay from "./components/disconnectedOverlay";
 
 function App() {
-  const [tiles, setTiles] = useState(false);
+  const [tiles, setTiles] = useState();
   const [winner, setWinner] = useState();
   const [socket, setSocket] = useState();
+  const [isReady, setIsReady] = useState(false);
+  const [playerDisconnected, setPlayerDisconnected] = useState(false);
   const [isCurrentPlayersTurn, setIsCurrentPlayersTurn] = useState();
   const [uid] = useState(uuidv4());
 
@@ -23,7 +27,7 @@ function App() {
   };
 
   const playAgainHandler = async () => {
-    console.log("in play agian", socket.id);
+    setPlayerDisconnected(false);
     socket.emit("restart");
   };
 
@@ -65,11 +69,21 @@ function App() {
 
     socket.on("connect", () => {
       console.log("connected", socket.id);
-
-      return () => {
-        socket.disconnect();
-      };
     });
+
+    socket.on("ready", () => {
+      setIsReady(true);
+    });
+
+    socket.on("playerDisconnected", () => {
+      console.log("someone disconnected");
+      setIsReady(false);
+      setPlayerDisconnected(true);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const heading = isCurrentPlayersTurn
@@ -78,7 +92,11 @@ function App() {
 
   return (
     <div>
-      <h1>{heading}</h1>
+      <h1>{isReady ? heading : ""}</h1>
+      {playerDisconnected && (
+        <DisconnectedOverlay playAgainHandler={playAgainHandler} />
+      )}
+      {!isReady & !playerDisconnected && <LoadingScreen />}
       <Board tiles={tiles} />
       {winner && (
         <Overlay

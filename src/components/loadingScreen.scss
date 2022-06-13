@@ -1,0 +1,26 @@
+.spinner {
+  border: 14px solid rgb(255, 208, 0);
+  border-top: 14px solid rgb(163, 40, 40);
+  border-radius: 50%;
+  width: 60px;
+  height: 25px;
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+h2 {
+  padding: 1em;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

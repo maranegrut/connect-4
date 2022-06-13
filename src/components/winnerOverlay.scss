@@ -1,0 +1,14 @@
+.winnerHeading {
+  font-size: 2em;
+  padding: 0 0.5em;
+}
+.partyHat {
+  width: 100%;
+  height: auto;
+  &.left {
+    transform: scaleX(-1);
+  }
+}
+.imgContainer {
+  width: 100px;
+}

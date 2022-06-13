@@ -14,9 +14,11 @@ const Tile = ({
 
   return (
     <div className="grid-item" onClick={!isFilled ? sendTileInfo : null}>
-      {isFilled && (
-        <div className={`tile ${playerNumber === 2 ? "yellow" : ""}`}></div>
-      )}
+      <div
+        className={`tile ${playerNumber === 2 ? "yellow" : ""} ${
+          isFilled ? "clicked" : ""
+        }`}
+      ></div>
     </div>
   );
 };

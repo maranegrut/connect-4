@@ -38,8 +38,12 @@ io.on("connection", (socket) => {
   socketToUidMap[socket.id] = uid;
   console.log(socketToUidMap);
 
-  const numberOfPlayersConnected = Object.keys(socketToPlayerMap).length;
-  socketToPlayerMap[socket.id] = numberOfPlayersConnected + 1;
+  const numberOfPlayersConnected = Object.keys(socketToPlayerMap).length + 1;
+  socketToPlayerMap[socket.id] = numberOfPlayersConnected;
+
+  if (numberOfPlayersConnected >= 2) {
+    io.emit("ready");
+  }
 
   const winner = undefined;
 
@@ -71,10 +75,17 @@ io.on("connection", (socket) => {
       array[i].fill(0, 0, columns);
     }
     const winner = undefined;
-    io.emit("updatedState", { array, winner });
+    const firstPlayerUid = Object.values(socketToUidMap)[0];
+
+    io.emit("updatedState", {
+      array,
+      winner,
+      nextPlayerUid: firstPlayerUid,
+    });
   });
 
   socket.on("disconnect", () => {
+    io.emit("playerDisconnected");
     delete socketToPlayerMap[socket.id];
     delete socketToUidMap[socket.id];
   });

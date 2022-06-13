@@ -1,0 +1,18 @@
+$main-blue: rgb(27, 76, 120);
+$darker-blue: rgb(17, 51, 80);
+
+button {
+  background-color: $main-blue;
+  color: white;
+  font-size: 1em;
+  font-weight: 500;
+  border: 1px solid $main-blue;
+  padding: 0.5em 1em;
+  border-radius: 10px;
+  &:hover {
+    background-color: $darker-blue;
+  }
+  &:active {
+    color: rgb(255, 208, 0);
+  }
+}
