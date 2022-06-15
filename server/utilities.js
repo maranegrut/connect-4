@@ -29,18 +29,23 @@ const findLowestEmptyRowInCol = (array, col, rows) => {
   return lowestEmptyRow;
 };
 
-const checkIfReadyToStartGame = (playersReady, io) => {
+const checkIfReadyToStartGame = (playersReady, io, roomId) => {
   if (playersReady >= 2) {
-    io.emit("ready");
+    io.to(roomId).emit("ready");
   } else {
-    io.emit("waiting");
+    io.to(roomId).emit("waiting");
   }
 };
 
-const startingState = (socketToUidMap) => {
+const startingState = (socket, roomToPlayersMap, socketToUidMap, roomId) => {
   // player who connects first goes first
-  console.log("in starting state", socketToUidMap);
-  const firstPlayerUid = Object.values(socketToUidMap)[0];
+  let firstPlayerSocket;
+  for (key in roomToPlayersMap) {
+    if (roomToPlayersMap[key].includes(socket.id)) {
+      firstPlayerSocket = roomToPlayersMap[key][0];
+    }
+  }
+  const firstPlayerUid = socketToUidMap[firstPlayerSocket];
 
   return {
     array: createStartingArray(rows, columns),
@@ -61,6 +66,18 @@ const rebuildSocketToPlayerMap = (socketToPlayerMap) => {
   }
 };
 
+const canAddSocketToExistingRoom = (roomToPlayersMap, socket) => {
+  for (roomId in roomToPlayersMap) {
+    if (roomToPlayersMap[roomId].length < 2) {
+      // if yes, add player to that room
+      socket.join(roomId);
+      roomToPlayersMap[roomId].push(socket.id);
+      return true;
+    }
+  }
+  return false;
+};
+
 const determineNextPlayerUid = (socketToUserMap, socketId) => {
   // it's their turn if they're not the one who just played
   // aka if they're not the one whose socket we got the message from
@@ -69,12 +86,16 @@ const determineNextPlayerUid = (socketToUserMap, socketId) => {
   const uids = Object.values(socketToUserMap);
   const currentPlayerUid = socketToUserMap[socketId];
   const isCurrentPlayerUid = (uid) => uid === currentPlayerUid;
-
-  const nextPlayerIndex =
-    uids.findIndex(isCurrentPlayerUid) + 1 < uids.length
-      ? uids.findIndex(isCurrentPlayerUid) + 1
-      : 0;
-
+  //if current player uid is at an even index (0, 2, 4, etc.)
+  //next player uid is current player uid at index + 1
+  const currentPlayerIndex = uids.findIndex(isCurrentPlayerUid);
+  let nextPlayerIndex;
+  if (currentPlayerIndex % 2 === 0) {
+    nextPlayerIndex = currentPlayerIndex + 1;
+  } else {
+    nextPlayerIndex = currentPlayerIndex - 1;
+  }
+  console.log("next player index", nextPlayerIndex);
   const nextPlayerUid = uids[nextPlayerIndex];
   return nextPlayerUid;
 };
@@ -183,3 +204,4 @@ exports.searchForWinner = searchForWinner;
 exports.checkIfReadyToStartGame = checkIfReadyToStartGame;
 exports.startingState = startingState;
 exports.rebuildSocketToPlayerMap = rebuildSocketToPlayerMap;
+exports.canAddSocketToExistingRoom = canAddSocketToExistingRoom;

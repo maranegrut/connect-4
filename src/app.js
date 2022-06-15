@@ -88,6 +88,7 @@ function App() {
   return (
     <div>
       <h1>{isReady ? heading : ""}</h1>
+      <p>{uid}</p>
       {opponentDisconnected && (
         <DisconnectedOverlay playAgainHandler={playAgainHandler} />
       )}
