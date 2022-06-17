@@ -28,7 +28,7 @@ function App() {
 
   const playAgainHandler = async () => {
     setOpponentDisconnected(false);
-    socket.emit("restart");
+    socket.emit("newGame");
   };
 
   const populateBoard = (tileData, nextPlayerUid, socket) => {

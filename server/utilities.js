@@ -32,19 +32,16 @@ const findLowestEmptyRowInCol = (array, col, rows) => {
 const checkIfReadyToStartGame = (playersReady, io, roomId) => {
   if (playersReady >= 2) {
     io.to(roomId).emit("ready");
+    console.log("emitting ready to room", roomId);
   } else {
     io.to(roomId).emit("waiting");
+    console.log("emitting wait to room", roomId);
   }
 };
 
-const startingState = (socket, roomToPlayersMap, socketToUidMap, roomId) => {
+const startingState = (socketsInRoom, socketToUidMap) => {
   // player who connects first goes first
-  let firstPlayerSocket;
-  for (key in roomToPlayersMap) {
-    if (roomToPlayersMap[key].includes(socket.id)) {
-      firstPlayerSocket = roomToPlayersMap[key][0];
-    }
-  }
+  const firstPlayerSocket = socketsInRoom[0];
   const firstPlayerUid = socketToUidMap[firstPlayerSocket];
 
   return {
@@ -54,28 +51,33 @@ const startingState = (socket, roomToPlayersMap, socketToUidMap, roomId) => {
   };
 };
 
-const rebuildSocketToPlayerMap = (socketToPlayerMap) => {
-  const playersRemaining = Object.keys(socketToPlayerMap);
-
-  for (key of playersRemaining) {
-    delete socketToPlayerMap[key]; // delete everyone to remake the map;
-    // could also have used let instead of const
-  }
-  for (key of playersRemaining) {
-    socketToPlayerMap[key] = Object.keys(socketToPlayerMap).length + 1;
-  }
-};
-
-const canAddSocketToExistingRoom = (roomToPlayersMap, socket) => {
-  for (roomId in roomToPlayersMap) {
-    if (roomToPlayersMap[roomId].length < 2) {
-      // if yes, add player to that room
+const addSocketToRoom = (rooms, socket) => {
+  //check first if there is a room with a player waiting
+  for (roomId in rooms) {
+    if (rooms[roomId].sockets.length === 1) {
       socket.join(roomId);
-      roomToPlayersMap[roomId].push(socket.id);
-      return true;
+      rooms[roomId].sockets.push(socket.id);
+      return;
     }
   }
-  return false;
+
+  //else check if there is an empty room
+  for (roomId in rooms) {
+    if (rooms[roomId].sockets.length === 0) {
+      socket.join(roomId);
+      rooms[roomId].sockets.push(socket.id);
+      return;
+    }
+  }
+  //if not, add socket to new room
+  const newRoomId = +roomId + 1; // why is roomId a string?
+  rooms[newRoomId] = {
+    array: createStartingArray(rows, columns),
+    sockets: [],
+    socketToUidMap: {},
+    socketToPlayerMap: {},
+  };
+  rooms[newRoomId].sockets = [socket.id];
 };
 
 const determineNextPlayerUid = (socketToUserMap, socketId) => {
@@ -85,16 +87,9 @@ const determineNextPlayerUid = (socketToUserMap, socketId) => {
   // send back the id for the front-end to decide
   const uids = Object.values(socketToUserMap);
   const currentPlayerUid = socketToUserMap[socketId];
-  const isCurrentPlayerUid = (uid) => uid === currentPlayerUid;
-  //if current player uid is at an even index (0, 2, 4, etc.)
-  //next player uid is current player uid at index + 1
-  const currentPlayerIndex = uids.findIndex(isCurrentPlayerUid);
-  let nextPlayerIndex;
-  if (currentPlayerIndex % 2 === 0) {
-    nextPlayerIndex = currentPlayerIndex + 1;
-  } else {
-    nextPlayerIndex = currentPlayerIndex - 1;
-  }
+  const currentPlayerIndex = uids.findIndex((uid) => uid === currentPlayerUid);
+  const nextPlayerIndex = currentPlayerIndex === 1 ? 0 : 1;
+
   console.log("next player index", nextPlayerIndex);
   const nextPlayerUid = uids[nextPlayerIndex];
   return nextPlayerUid;
@@ -203,5 +198,4 @@ exports.determineNextPlayerUid = determineNextPlayerUid;
 exports.searchForWinner = searchForWinner;
 exports.checkIfReadyToStartGame = checkIfReadyToStartGame;
 exports.startingState = startingState;
-exports.rebuildSocketToPlayerMap = rebuildSocketToPlayerMap;
-exports.canAddSocketToExistingRoom = canAddSocketToExistingRoom;
+exports.addSocketToRoom = addSocketToRoom;
