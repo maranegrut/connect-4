@@ -57,7 +57,7 @@ const addSocketToRoom = (rooms, socket) => {
     if (rooms[roomId].sockets.length === 1) {
       socket.join(roomId);
       rooms[roomId].sockets.push(socket.id);
-      return;
+      return roomId;
     }
   }
 
@@ -66,7 +66,7 @@ const addSocketToRoom = (rooms, socket) => {
     if (rooms[roomId].sockets.length === 0) {
       socket.join(roomId);
       rooms[roomId].sockets.push(socket.id);
-      return;
+      return roomId;
     }
   }
   //if not, add socket to new room
@@ -78,6 +78,14 @@ const addSocketToRoom = (rooms, socket) => {
     socketToPlayerMap: {},
   };
   rooms[newRoomId].sockets = [socket.id];
+  return newRoomId;
+};
+
+const resetRoom = (rooms, roomId) => {
+  rooms[roomId].sockets = [];
+  rooms[roomId].socketToPlayerMap = {};
+  rooms[roomId].socketToUidMap = {};
+  rooms[roomId].array = createStartingArray(rows, columns);
 };
 
 const determineNextPlayerUid = (socketToUserMap, socketId) => {
@@ -199,3 +207,4 @@ exports.searchForWinner = searchForWinner;
 exports.checkIfReadyToStartGame = checkIfReadyToStartGame;
 exports.startingState = startingState;
 exports.addSocketToRoom = addSocketToRoom;
+exports.resetRoom = resetRoom;
