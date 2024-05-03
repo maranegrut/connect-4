@@ -39,10 +39,9 @@ const checkIfReadyToStartGame = (playersReady, io, roomId) => {
   }
 };
 
-const startingState = (socketsInRoom, socketToUidMap) => {
+const startingState = (socketsInRoom) => {
   // player who connects first goes first
-  const firstPlayerSocket = socketsInRoom[0];
-  const firstPlayerUid = socketToUidMap[firstPlayerSocket];
+  const firstPlayerUid = socketsInRoom[0].uid;
 
   return {
     array: createStartingArray(rows, columns),
@@ -52,11 +51,13 @@ const startingState = (socketsInRoom, socketToUidMap) => {
 };
 
 const addSocketToRoom = (rooms, socket) => {
+  const uid = socket.handshake.query.uid;
+
   //check first if there is a room with a player waiting
   for (roomId in rooms) {
     if (rooms[roomId].sockets.length === 1) {
       socket.join(roomId);
-      rooms[roomId].sockets.push(socket.id);
+      rooms[roomId].sockets.push({ id: socket.id, uid: uid, playerNumber: 2 });
       return roomId;
     }
   }
@@ -65,41 +66,45 @@ const addSocketToRoom = (rooms, socket) => {
   for (roomId in rooms) {
     if (rooms[roomId].sockets.length === 0) {
       socket.join(roomId);
-      rooms[roomId].sockets.push(socket.id);
+      rooms[roomId].sockets.push({ id: socket.id, uid: uid, playerNumber: 1 });
       return roomId;
     }
   }
   //if not, add socket to new room
-  const newRoomId = +roomId + 1; // why is roomId a string?
+  const newRoomId = +roomId + 1;
+  socket.join(newRoomId);
   rooms[newRoomId] = {
     array: createStartingArray(rows, columns),
-    sockets: [],
-    socketToUidMap: {},
-    socketToPlayerMap: {},
+    sockets: [{ id: socket.id, uid: uid, playerNumber: 1 }],
   };
-  rooms[newRoomId].sockets = [socket.id];
+
   return newRoomId;
+};
+
+const findRoomId = (rooms, socket) => {
+  for (key in rooms) {
+    const socketIds = rooms[key].sockets.map((socket) => socket.id);
+    if (socketIds.includes(socket.id)) {
+      console.log("room id", key);
+      return key.toString();
+    }
+  }
+  return undefined;
 };
 
 const resetRoom = (rooms, roomId) => {
   rooms[roomId].sockets = [];
-  rooms[roomId].socketToPlayerMap = {};
-  rooms[roomId].socketToUidMap = {};
   rooms[roomId].array = createStartingArray(rows, columns);
 };
 
-const determineNextPlayerUid = (socketToUserMap, socketId) => {
+const determineNextPlayerUid = (sockets, currentPlayerIndex) => {
   // it's their turn if they're not the one who just played
   // aka if they're not the one whose socket we got the message from
   // we have the socket id, get the uid corresponding to it
   // send back the id for the front-end to decide
-  const uids = Object.values(socketToUserMap);
-  const currentPlayerUid = socketToUserMap[socketId];
-  const currentPlayerIndex = uids.findIndex((uid) => uid === currentPlayerUid);
   const nextPlayerIndex = currentPlayerIndex === 1 ? 0 : 1;
-
   console.log("next player index", nextPlayerIndex);
-  const nextPlayerUid = uids[nextPlayerIndex];
+  const nextPlayerUid = sockets[nextPlayerIndex].uid;
   return nextPlayerUid;
 };
 
@@ -208,3 +213,4 @@ exports.checkIfReadyToStartGame = checkIfReadyToStartGame;
 exports.startingState = startingState;
 exports.addSocketToRoom = addSocketToRoom;
 exports.resetRoom = resetRoom;
+exports.findRoomId = findRoomId;

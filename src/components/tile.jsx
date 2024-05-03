@@ -1,22 +1,15 @@
 import "./tile.scss";
 
-const Tile = ({
-  isFilled,
-  playerNumber,
-  addTileHandler,
-  index,
-  socket,
-  isCurrentPlayersTurn,
-}) => {
+const Tile = ({ value, index, addTileHandler }) => {
   const sendTileInfo = () => {
-    addTileHandler(index, socket, isCurrentPlayersTurn);
+    addTileHandler(index);
   };
 
   return (
-    <div className="grid-item" onClick={!isFilled ? sendTileInfo : null}>
+    <div className="grid-item" onClick={value === 0 ? sendTileInfo : null}>
       <div
-        className={`tile ${playerNumber === 2 ? "yellow" : ""} ${
-          isFilled ? "clicked" : ""
+        className={`tile ${value === 2 ? "yellow" : ""} ${
+          value !== 0 ? "clicked" : ""
         }`}
       ></div>
     </div>

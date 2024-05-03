@@ -11,6 +11,7 @@ const {
   startingState,
   addSocketToRoom,
   resetRoom,
+  findRoomId,
 } = require("./utilities");
 
 const app = express();
@@ -27,55 +28,47 @@ const columns = 7;
 const rooms = {
   1: {
     array: createStartingArray(rows, columns),
-    sockets: [],
-    socketToUidMap: {},
-    socketToPlayerMap: {},
+    sockets: [
+      //{ id, uid, playerNumber }
+    ],
   },
 };
 
 io.on("connection", (socket) => {
   let roomId = addSocketToRoom(rooms, socket);
-
-  //pull out the array and maps from room
-  let { sockets, socketToUidMap, socketToPlayerMap } = rooms[roomId];
-
-  //add socket to socketToUidMap
-  const uid = socket.handshake.query.uid;
-  socketToUidMap[socket.id] = uid;
-
-  //add socket to socketToPlayerMap
-  let playersReady = sockets.length;
-  socketToPlayerMap[socket.id] = playersReady;
   console.log("room to sockets map after connect", rooms);
+  console.log("room id", roomId);
+
+  let { sockets } = rooms[roomId];
+  let playersReady = sockets.length;
+  console.log("players ready", playersReady);
 
   //if 2 players are in the room, tell the front end 'ready'
   //otherwise tell it 'wait'
-  console.log("room id", roomId);
-  console.log("players ready", playersReady);
   checkIfReadyToStartGame(playersReady, io, roomId.toString());
 
   //send the front-end starting state:
   //empty array, undefined winner, first player uid
-  socket.emit("updatedState", startingState(sockets, socketToUidMap));
+  socket.emit("updatedState", startingState(sockets));
 
-  socket.on("dropTile", (index) => {
+  socket.on("turn", (index) => {
+    console.log("playing a turn", index);
     // determine in which room the turn was played
-    for (key in rooms) {
-      if (rooms[key].sockets.includes(socket.id)) {
-        roomId = key;
-      }
-    }
-    let { array, socketToUidMap, socketToPlayerMap } = rooms[roomId];
+    roomId = findRoomId(rooms, socket);
 
-    //figure out where to drop the tile
+    let { array, sockets } = rooms[roomId];
+
+    //figure out which player added the tile
+    const roomSocketIds = sockets.map((socket) => socket.id);
+    const socketIndex = roomSocketIds.indexOf(socket.id);
+    const playerNumber = sockets[socketIndex].playerNumber;
+
+    //update array
     const col = index.col;
     const lowestEmptyRow = findLowestEmptyRowInCol(array, col, rows);
-
-    //and which player dropped it, update array
-    const playerNumber = socketToPlayerMap[socket.id];
     array[lowestEmptyRow][col] = playerNumber;
 
-    const nextPlayerUid = determineNextPlayerUid(socketToUidMap, socket.id);
+    const nextPlayerUid = determineNextPlayerUid(sockets, socketIndex);
 
     const winner = searchForWinner(array, playerNumber, lowestEmptyRow, col);
 
@@ -91,50 +84,40 @@ io.on("connection", (socket) => {
     if (winner) {
       resetRoom(rooms, roomId);
     }
-    console.log("room after winner", rooms[roomId]);
+    console.log("room after turn", rooms[roomId]);
   });
 
   socket.on("newGame", () => {
     let roomId = addSocketToRoom(rooms, socket);
-    let { sockets, socketToUidMap, socketToPlayerMap } = rooms[roomId];
+    let { sockets } = rooms[roomId];
 
     //add socket to maps
-    playersReady = sockets.length;
-    socketToPlayerMap[socket.id] = playersReady;
-    socketToUidMap[socket.id] = uid;
-
     playersReady = sockets.length;
 
     console.log("rooms after restart", rooms);
     console.log("players ready after restart", playersReady);
 
     // start new game with empty array and first player uid
-    socket.emit("updatedState", startingState(sockets, socketToUidMap));
+    socket.emit("updatedState", startingState(sockets));
 
     checkIfReadyToStartGame(playersReady, io, roomId);
   });
 
   socket.on("disconnect", () => {
     //do nothing if both players are gone from room (after win)
-    let roomId = undefined;
-    //if one player is left, reset their room
-    for (key in rooms) {
-      if (rooms[key].sockets.includes(socket.id)) {
-        roomId = key;
-        //let the front end know to display disconnected message
-        io.to(roomId.toString()).emit("playerDisconnected");
-        console.log(roomId);
+    //if one player is left, find and reset their room
+    const roomId = findRoomId(rooms, socket);
+    if (roomId) {
+      //let the front end know to display disconnected message
+      io.to(roomId).emit("playerDisconnected");
 
-        let { sockets, socketToPlayerMap, socketToUidMap, array } =
-          rooms[roomId]; // why does it not work?
-
-        //reset the room
-        //player who is left with the disconnect message is not assigned to a room
-        //until they click 'new game'
-        resetRoom(rooms, roomId);
-        console.log("in disconnect", rooms);
-      }
+      //reset the room
+      //player who is left with the disconnect message is not assigned to a room
+      //until they click 'new game'
+      resetRoom(rooms, roomId);
     }
+
+    console.log("in disconnect", rooms);
   });
 });
 

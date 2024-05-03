@@ -1,7 +1,6 @@
 import "./app.scss";
 import Overlay from "./components/winnerOverlay";
 import Board from "./components/board";
-import Tile from "./components/tile";
 import { useEffectOnce } from "./hooks/useEffectOnce";
 import { io } from "socket.io-client";
 import { useState } from "react";
@@ -10,7 +9,7 @@ import LoadingScreen from "./components/loadingScreen";
 import DisconnectedOverlay from "./components/disconnectedOverlay";
 
 function App() {
-  const [tiles, setTiles] = useState();
+  const [boardArray, setBoardArray] = useState([]);
   const [winner, setWinner] = useState();
   const [socket, setSocket] = useState();
   const [isReady, setIsReady] = useState(false);
@@ -20,9 +19,12 @@ function App() {
 
   const serverUrl = "http://localhost:5000";
 
-  const addTileHandler = async (index, socket, canPlay) => {
-    if (canPlay) {
-      socket.emit("dropTile", { row: index.row, col: index.col });
+  const addTileHandler = async (index) => {
+    const row = Math.floor(index / 7);
+    const col = index % 7;
+
+    if (isCurrentPlayersTurn) {
+      socket.emit("turn", { row: row, col: col });
     }
   };
 
@@ -31,23 +33,8 @@ function App() {
     socket.emit("newGame");
   };
 
-  const populateBoard = (tileData, nextPlayerUid, socket) => {
-    for (let i = 0; i < tileData.length; i++) {
-      for (let j = 0; j < tileData[i].length; j++) {
-        tileData[i][j] = (
-          <Tile
-            isFilled={tileData[i][j] === 0 ? false : true}
-            playerNumber={tileData[i][j]}
-            addTileHandler={addTileHandler}
-            index={{ row: i, col: j }}
-            key={i + "," + j}
-            socket={socket}
-            isCurrentPlayersTurn={nextPlayerUid === uid} //have to pass this to tile handler bc otherwise undefined
-          />
-        );
-      }
-    }
-    setTiles(tileData);
+  const populateBoard = (tileData, nextPlayerUid) => {
+    setBoardArray(tileData);
     setIsCurrentPlayersTurn(nextPlayerUid === uid);
   };
 
@@ -70,7 +57,7 @@ function App() {
     });
 
     socket.on("updatedState", (updatedData) => {
-      populateBoard(updatedData.array, updatedData.nextPlayerUid, socket);
+      populateBoard(updatedData.array, updatedData.nextPlayerUid);
       setWinner(updatedData.winner);
     });
 
@@ -93,7 +80,7 @@ function App() {
         <DisconnectedOverlay playAgainHandler={playAgainHandler} />
       )}
       {!isReady && !opponentDisconnected && <LoadingScreen />}
-      <Board tiles={tiles} />
+      <Board tiles={boardArray} addTileHandler={addTileHandler} />
       {winner && (
         <Overlay
           playerNumber={winner}
